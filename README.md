@@ -3,6 +3,45 @@ ADLMFlexNetServer
 [![Docker Automated build](https://img.shields.io/docker/automated/haysclark/adlmflexnetserver.svg?maxAge=2592000)](https://hub.docker.com/r/haysclark/adlmflexnetserver/builds/) [![Docker Stars](https://img.shields.io/docker/stars/haysclark/adlmflexnetserver.svg?maxAge=2592000)](https://hub.docker.com/r/haysclark/adlmflexnetserver/) [![](https://img.shields.io/docker/pulls/haysclark/adlmflexnetserver.svg)](https://hub.docker.com/r/haysclark/adlmflexnetserver 'DockerHub') [![license](https://img.shields.io/github/license/mashape/apistatus.svg)]() [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) [![Code of conduct](https://img.shields.io/badge/code%20of-conduct-ff69b4.svg)](https://github.com/haysclark/adlmflexnetserver/blob/main/CODE_OF_CONDUCT.md) [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release#-semantic-release)
 
  > Unofficial Autodesk License Manager FLEXlm® Network Server container.
+>
+
+Before
+-----
+
+Clone repository and build a new image.
+
+```bash
+docker build -t "newadmflexnetserver" .
+```
+
+After building, execute the container with new image. 
+
+See a docker-compose.yaml
+
+```YAML
+services:
+  admflexnet:
+    image: newadmflexnet
+    container_name: admflexnetserver
+    hostname: name_of_server # same registered in autodesk
+    mac_address: XX:XX:XX:XX:XX:XX # same mac address registered in autodesk
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "2080:2080"
+      - "27000-27009:27000-27009"
+    volumes:
+      - ./license.lic:/var/flexlm/adsk_server.lic:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    command: -c /var/flexlm/adsk_server.lic
+
+```
+
+Thanks, @haysclark!
+
+---
+
 
 Usage
 -----
