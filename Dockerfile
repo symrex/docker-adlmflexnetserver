@@ -1,10 +1,10 @@
-FROM centos:centos6
+FROM fedora 
 
 #########################################
 ##        BUILD-TIME VARIABLES        ##
 #########################################
 # url for Network Licence Manager
-ARG NLM_URL=https://knowledge.autodesk.com/sites/default/files/file_downloads/nlm11.16.2.0_ipv4_ipv6_linux64.tar.gz
+ARG NLM_URL=https://damassets.autodesk.net/content/dam/autodesk/www/files/linux/nlm11-19-4-1-ipv4-ipv6-linux64.tar.gz
 # path for temporary files
 ARG TEMP_PATH=/tmp/flexnetserver
 
@@ -19,7 +19,7 @@ ENV PATH="$PATH:/opt/flexnetserver/"
 #########################################
 COPY /files /usr/local/bin
 
-RUN yum install -y redhat-lsb-core-4.0 wget-1.12 && yum clean all
+RUN dnf install -y redhat-lsb-core wget && yum clean all
 
 WORKDIR $TEMP_PATH
 RUN wget --progress=bar:force -- $NLM_URL
