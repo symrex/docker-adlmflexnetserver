@@ -1,29 +1,22 @@
 services:
   admflexnet:
+    image: ghcr.io/symrex/docker-adlmflexnetserver:latest
     build:
       context: .
       dockerfile: Dockerfile
       args:
         NLM_URL: ${ADM_FLEXNET_NLM_URL}
-    image: ${ADM_FLEXNET_IMAGE:-newadmflexnet}
-    container_name: admflexnetserver
     hostname: ${ADM_FLEXNET_HOSTNAME}
     mac_address: ${ADM_FLEXNET_MAC_ADDRESS}
     restart: unless-stopped
-    tty: true
     ports:
       - "2080:2080"
       - "27000-27009:27000-27009"
     volumes:
-      - ${ADM_FLEXNET_LICENSE_PATH:-./licenses/latest.lic}:/var/flexlm/adsk_server.lic:ro
-      - ./logs/:/logs
+      - ./licenses/latest.lic:/opt/flexnetserver/adsk_server.lic:ro
+      - ./logs/:/logs/
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    command: -c /var/flexlm/adsk_server.lic 
-
-# usage: lmgrd [-l [+]debug_log_path] [-2 -p] [-z] [-c license_file_list]
-# adlmflexnetserver  | 10:51:35 (lmgrd)              [-datestamp]
-# adlmflexnetserver  | 10:51:35 (lmgrd)              [-v] [-local]
-# adlmflexnetserver  | 10:51:35 (lmgrd)              [-localonly]
-# adlmflexnetserver  | 10:51:35 (lmgrd)              [-x lmdown|lmremove] [-help]
-# adlmflexnetserver  | 10:51:35 (lmgrd)              [-servTransferred]
+    env_file:
+      - example.env
+      - .env

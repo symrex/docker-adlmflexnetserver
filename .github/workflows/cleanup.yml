@@ -1,0 +1,77 @@
+name: Cleanup Old Tags
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    name: Cleanup Old Tags
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Get and delete old tags
+        run: |
+          set -euo pipefail
+          
+          # Trap for cleanup on exit
+          trap 'echo "Cleanup interrupted, ensuring git state is clean..."; exit 1' INT TERM
+          
+          RETENTION_DAYS=30
+          KEEP_RECENT=3
+          MAX_RETRIES=3
+          CUTOFF_DATE=$(date -d "-${RETENTION_DAYS} days" +%Y%m%d 2>/dev/null || date -v-${RETENTION_DAYS}d +%Y%m%d)
+          
+          echo "Retention: ${RETENTION_DAYS} days (cutoff: ${CUTOFF_DATE})"
+          echo "Keeping recent: ${KEEP_RECENT} tags"
+          
+          # Get the last KEEP_RECENT versioned tags (for rollback)
+          RECENT_TAGS=$(git tag -l '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | sort -r | head -n ${KEEP_RECENT})
+          
+          # Function to delete tag with retry
+          delete_tag() {
+            local tag=$1
+            local retry=0
+            while [ $retry -lt $MAX_RETRIES ]; do
+              if git push origin --delete "refs/tags/$tag" 2>/dev/null; then
+                return 0
+              fi
+              retry=$((retry + 1))
+              echo "Retry $retry/$MAX_RETRIES for tag: $tag"
+              sleep 2
+            done
+            echo "Failed to delete tag after $MAX_RETRIES retries: $tag"
+            return 1
+          }
+          
+          # List all tags matching YYYYMMDD pattern
+          for tag in $(git tag -l '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'); do
+            # Skip latest and recently kept tags
+            if [[ "$tag" == "latest" ]]; then
+              echo "Keeping latest tag: $tag"
+              continue
+            fi
+            
+            # Check if this is one of the recent tags to keep
+            if echo "$RECENT_TAGS" | grep -q "^${tag}$"; then
+              echo "Keeping recent tag: $tag"
+              continue
+            fi
+            
+            # Delete old tags
+            if [[ "$tag" < "$CUTOFF_DATE" ]]; then
+              echo "Deleting old tag: $tag"
+              delete_tag "$tag" || true
+            fi
+          done

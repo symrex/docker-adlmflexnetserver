@@ -1,49 +1,45 @@
-FROM fedora 
+# ============================================
+# STAGE 1: BUILDER — Always Debian (RPM Extraction)
+# ============================================
+FROM debian:bookworm-slim AS builder
 
-#########################################
-##        BUILD-TIME VARIABLES        ##
-#########################################
-# url for Network Licence Manager
-ARG NLM_URL=https://damassets.autodesk.net/content/dam/autodesk/www/files/linux/nlm11-19-4-1-ipv4-ipv6-linux64.tar.gz
-# path for temporary files
-ARG TEMP_PATH=/tmp/flexnetserver
+LABEL version="1.0" maintainer="symrex"
 
-#########################################
-##        ENVIRONMENTAL CONFIG         ##
-#########################################
-# add the flexlm commands to $PATH
-ENV PATH="$PATH:/opt/flexnetserver/"
+ARG NLM_URL
+ARG TEMP_PATH=/opt/flexnetserver
 
-#########################################
-##         RUN INSTALL SCRIPT          ##
-#########################################
-COPY /files /usr/local/bin
-
-RUN dnf install -y redhat-lsb-core wget && yum clean all
+RUN set -e && apt-get update && apt-get install -y --no-install-recommends \
+        wget rpm bsdtar lsb-release \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR $TEMP_PATH
 RUN wget --progress=bar:force -- $NLM_URL
 RUN tar -zxvf ./*.tar.gz
-RUN rpm -vhi ./*.rpm
-RUN rm -rf $TEMP_PATH
 
-# lmadmin is required for -2 -p flag support
-RUN groupadd -r lmadmin && \
-    useradd -r -g lmadmin lmadmin
+# ============================================
+# STAGE 2: TARGET — Selectable via BUILD_ARG
+# ============================================
+ARG TARGET_TYPE=debian
+FROM ${TARGET_TYPE} AS final
 
-#########################################
-##              VOLUMES                ##
-#########################################
-VOLUME ["/var/flexlm"]
+# ============================================
+# STAGE 3: RESULT — Copies to final
+# ============================================
+FROM final AS result
 
-#########################################
-##            EXPOSE PORTS             ##
-#########################################
+COPY --from=builder /opt/flexnetserver /opt/flexnetserver
+
+# Add glibc for Distroless (only if not present)
+RUN if [ ! -f /lib64/ld-linux-x86-64.so.2 ]; then \
+        mkdir -p /lib64 && \
+        cp /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /lib64/ 2>/dev/null || true; \
+    fi
+
+VOLUME ["/opt/flexnetserver"]
 EXPOSE 2080
 EXPOSE 27000-27009
 
-# do not use ROOT user
 USER lmadmin
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-# no CMD, use container as if 'lmgrd'
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD lmutil lmstat -a -c /opt/flexnetserver/adsk_server.lic || exit 1
+ENTRYPOINT ["lmgrd", "-z", "-c", "/opt/flexnetserver/adsk_server.lic", "@"]
