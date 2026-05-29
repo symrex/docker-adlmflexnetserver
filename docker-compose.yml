@@ -20,7 +20,7 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     healthcheck:
-      test: ["CMD", "/opt/flexnetserver/lmutil", "lmstat", "-a", "-c", "/usr/local/flexlm/licenses/license.dat"]
+      test: ["CMD", "lmutil", "lmstat", "-a", "-c", "/usr/local/flexlm/licenses/license.dat"]
       interval: 30s
       timeout: 10s
       start_period: 5s

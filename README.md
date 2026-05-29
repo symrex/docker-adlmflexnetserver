@@ -26,12 +26,10 @@ builds and validates images but does not publish them to GHCR.
 | Autodesk vendor port | `2080/tcp` |
 | License manager ports | `27000-27009/tcp` |
 | Runtime user | `lmadmin` |
-| Default Compose command | none |
+| Default Compose command | `-z -datestamp` |
 | Compose health check | `lmutil lmstat -a -c /usr/local/flexlm/licenses/license.dat` |
 
-The container hostname and MAC address must match the values used when the
-Autodesk license file was generated. If the license file pins different ports,
-publish those ports instead of the defaults above.
+The container hostname and MAC address must match the values used when the Autodesk license file was generated. If the license file pins different ports, publish those ports instead of the defaults above.
 
 ## Quick Start
 
@@ -49,7 +47,6 @@ Edit `.env`:
 ```dotenv
 ADM_FLEXNET_HOSTNAME=name_registered_with_autodesk
 ADM_FLEXNET_MAC_ADDRESS=XX:XX:XX:XX:XX:XX
-ADM_FLEXNET_NLM_URL=https://damassets.autodesk.net/content/dam/autodesk/www/files/linux/nlm11.19.9.0_ipv4_ipv6_linux64.tar.gz
 ```
 
 Build and start:
@@ -81,25 +78,11 @@ The Compose file reads runtime values from `.env`.
 
 Treat license files and `.env` as sensitive operational material.
 
-By default, Compose does not pass a command. Docker runs the image entrypoint
-directly, so FlexNet output stays in the Docker log stream:
-
-```text
-lmgrd -z -c /usr/local/flexlm/licenses/license.dat
-```
-
-To append `lmgrd` runtime arguments, uncomment the optional `command` line in
-`docker-compose.yml` and set `ADM_FLEXNET_COMMAND` in `.env`. Avoid `-l` unless
-you intentionally want FlexNet to write to a file instead of Docker logs.
-
 ## Build Targets
 
-The Dockerfile uses a Debian builder stage to download and extract the Autodesk
-NLM archive. The final stage is selected with `TARGET_TYPE`; the GitHub Actions
-workflow currently builds a distroless final image.
+The Dockerfile uses a Debian builder stage to download and extract the Autodesk NLM archive. The final stage is selected with `TARGET_TYPE`; the GitHub Actions workflow currently builds a distroless final image.
 
-Autodesk's Linux NLM archive contains x86_64 binaries, so local builds default
-to `linux/amd64`. This is required on ARM64 hosts such as Apple Silicon Macs.
+Autodesk's Linux NLM archive contains x86_64 binaries, so local builds default to `linux/amd64`. This is required on ARM64 hosts such as Apple Silicon Macs.
 
 Build the default image:
 
@@ -123,9 +106,7 @@ docker build \
 
 ## Operations
 
-Docker Compose enables `init: true` for the service. This lets Docker run a tiny
-init process as PID 1, forward signals, and reap child processes created by
-`lmgrd` or vendor daemons without adding an init binary to the distroless image.
+Docker Compose enables `init: true` for the service. This lets Docker run a tiny init process as PID 1, forward signals, and reap child processes created by `lmgrd` or vendor daemons without adding an init binary to the distroless image.
 
 Read Docker logs:
 
@@ -147,37 +128,15 @@ chmod 0444 licenses/latest.lic
 docker compose restart admflexnet
 ```
 
-## Security Baseline
-
-- Run with a dedicated license-server hostname and MAC address.
-- Mount the Autodesk license file read-only.
-- Restrict ports `2080/tcp` and `27000-27009/tcp` to trusted client networks.
-- Keep `.env`, license files and operational logs out of Git.
-- Pin an internally built image tag or digest in production instead of relying
-  on `latest`.
-- Review Autodesk redistribution terms before publishing images.
-- Build the image locally or in your own private infrastructure.
-- The repository source is MIT licensed; Autodesk/Flexera binaries downloaded
-  during the build are not covered by this repository license.
-
 ## Legal Distribution Guard
 
-Autodesk's current public
-[Terms of Use](https://www.autodesk.com/company/terms-of-use/en/general-terms)
-grant use rights within the scope of an Autodesk subscription and prohibit
-making Autodesk offerings available to third parties unless expressly
-authorized. Because this image embeds Autodesk NLM binaries after build,
-redistribution through public registries such as GHCR is treated as not allowed
-for this repository.
+Autodesk's current public [Terms of Use](https://www.autodesk.com/company/terms-of-use/en/general-terms) grant use rights within the scope of an Autodesk subscription and prohibit making Autodesk offerings available to third parties unless expressly authorized. Because this image embeds Autodesk NLM binaries after build, redistribution through public registries such as GHCR is treated as not allowed for this repository.
 
 The default workflow is configured accordingly:
 
-- pull requests, pushes to `main`, monthly scheduled runs, and manual dispatch
-  build and smoke-test the local image;
-- no workflow step logs in to GHCR, pushes an image, signs a remote image, or
-  attaches a registry attestation;
-- each user or organization must build the image locally, or inside their own
-  private CI/CD environment, from the official Autodesk download.
+- pull requests, pushes to `main`, monthly scheduled runs, and manual dispatch build and smoke-test the local image;
+- no workflow step logs in to GHCR, pushes an image, signs a remote image, or attaches a registry attestation;
+- each user or organization must build the image locally, or inside their own private CI/CD environment, from the official Autodesk download.
 
 ## Troubleshooting
 
@@ -192,21 +151,6 @@ The default workflow is configured accordingly:
 ## CI/CD
 
 [`.github/workflows/build.yml`](.github/workflows/build.yml) is intentionally small. It runs hadolint, builds the distroless image locally, and runs `lmutil lmhostid` as a smoke test. It runs on pull requests, pushes to `main`, manual dispatch, and once per month as a prophylactic check.
-
-No GitHub secrets or repository variables are required.
-
-SBOM generation is not part of the default workflow. If needed, generate it as a separate artifact for a locally built image instead of embedding it into the image:
-
-```bash
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  anchore/syft:latest adlmflexnetserver:local -o cyclonedx-json > sbom.cyclonedx.json
-```
-
-Publishing, registry signing and remote SBOM attestation are intentionally not implemented because redistribution of Autodesk binaries is not permitted here.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Changes that alter container behavior should include the exact build command, runtime command and validation output used during testing.
 
 ## License
 
