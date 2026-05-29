@@ -23,9 +23,9 @@ RUN set -e; \
     mkdir -p /staging/etc /staging/var/flexlm /staging/usr/local/bin /staging/usr/local/flexlm/licenses /staging/usr/tmp/.flexlm; \
     mkdir -p /staging/usr/lib/x86_64-linux-gnu; \
     cp /lib/x86_64-linux-gnu/libgcc_s.so.1 /staging/usr/lib/x86_64-linux-gnu/; \
-    ln -s /opt/flexnetserver/lmgrd /staging/usr/local/bin/lmgrd; \
-    ln -s /opt/flexnetserver/lmutil /staging/usr/local/bin/lmutil; \
-    ln -s /opt/flexnetserver/adskflex /staging/usr/local/bin/adskflex; \
+    ln -s ../../../opt/flexnetserver/lmgrd /staging/usr/local/bin/lmgrd; \
+    ln -s ../../../opt/flexnetserver/lmutil /staging/usr/local/bin/lmutil; \
+    ln -s ../../../opt/flexnetserver/adskflex /staging/usr/local/bin/adskflex; \
     printf 'lmadmin:x:10001:10001:Autodesk License Manager:/opt/flexnetserver:/sbin/nologin\n' > /staging/etc/passwd; \
     printf 'lmadmin:x:10001:\n' > /staging/etc/group; \
     chmod 1777 /staging/usr/tmp; \
