@@ -20,13 +20,13 @@ RUN set -e; \
     tar -xzf nlm.tar.gz; \
     mkdir -p /staging; \
     rpm2cpio ./*.rpm | (cd /staging && cpio -idmv); \
-    mkdir -p /staging/etc /staging/logs /staging/var/flexlm /staging/usr/tmp/.flexlm; \
+    mkdir -p /staging/etc /staging/var/flexlm /staging/usr/local/flexlm/licenses /staging/usr/tmp/.flexlm; \
     mkdir -p /staging/usr/lib/x86_64-linux-gnu; \
     cp /lib/x86_64-linux-gnu/libgcc_s.so.1 /staging/usr/lib/x86_64-linux-gnu/; \
     printf 'lmadmin:x:10001:10001:Autodesk License Manager:/opt/flexnetserver:/sbin/nologin\n' > /staging/etc/passwd; \
     printf 'lmadmin:x:10001:\n' > /staging/etc/group; \
     chmod 1777 /staging/usr/tmp; \
-    chown -R 10001:10001 /staging/logs /staging/var/flexlm /staging/usr/tmp/.flexlm; \
+    chown -R 10001:10001 /staging/var/flexlm /staging/usr/local/flexlm /staging/usr/tmp/.flexlm; \
     test -x /staging/opt/flexnetserver/lmgrd; \
     test -x /staging/opt/flexnetserver/lmutil
 
@@ -57,4 +57,4 @@ EXPOSE 2080
 EXPOSE 27000-27009
 
 USER lmadmin:lmadmin
-ENTRYPOINT ["/opt/flexnetserver/lmgrd", "-z", "-c", "/opt/flexnetserver/adsk_server.lic"]
+ENTRYPOINT ["/opt/flexnetserver/lmgrd"]

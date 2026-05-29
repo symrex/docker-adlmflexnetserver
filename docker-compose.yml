@@ -16,12 +16,11 @@ services:
       - "2080:2080"
       - "27000-27009:27000-27009"
     volumes:
-      - ./licenses/latest.lic:/opt/flexnetserver/adsk_server.lic:ro
-      - ./logs/:/logs/
+      - ./licenses/latest.lic:/usr/local/flexlm/licenses/license.dat:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     healthcheck:
-      test: ["CMD", "/opt/flexnetserver/lmutil", "lmstat", "-a", "-c", "/opt/flexnetserver/adsk_server.lic"]
+      test: ["CMD", "/opt/flexnetserver/lmutil", "lmstat", "-a", "-c", "/usr/local/flexlm/licenses/license.dat"]
       interval: 30s
       timeout: 10s
       start_period: 5s

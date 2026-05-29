@@ -21,13 +21,13 @@ builds and validates images but does not publish them to GHCR.
 | Item | Value |
 | --- | --- |
 | License daemon | `lmgrd` |
-| Default license path | `/opt/flexnetserver/adsk_server.lic` |
-| Default log path | `/logs/lmgrd.log` |
+| Default license path | `/usr/local/flexlm/licenses/license.dat` |
+| Default log target | Docker stdout/stderr (`docker compose logs`) |
 | Autodesk vendor port | `2080/tcp` |
 | License manager ports | `27000-27009/tcp` |
 | Runtime user | `lmadmin` |
-| Default Compose command | `-l /logs/lmgrd.log -c /opt/flexnetserver/adsk_server.lic` |
-| Compose health check | `lmutil lmstat -a -c /opt/flexnetserver/adsk_server.lic` |
+| Default Compose command | none |
+| Compose health check | `lmutil lmstat -a -c /usr/local/flexlm/licenses/license.dat` |
 
 The container hostname and MAC address must match the values used when the
 Autodesk license file was generated. If the license file pins different ports,
@@ -63,7 +63,7 @@ Check status:
 ```bash
 docker compose ps
 docker compose logs --tail=100 admflexnet
-docker compose exec admflexnet lmutil lmstat -a -c /opt/flexnetserver/adsk_server.lic
+docker compose exec admflexnet lmutil lmstat -a -c /usr/local/flexlm/licenses/license.dat
 ```
 
 ## Configuration
@@ -77,17 +77,20 @@ The Compose file reads runtime values from `.env`.
 | `ADM_FLEXNET_NLM_URL` | yes for builds | Autodesk NLM archive used during image build. |
 | `ADM_FLEXNET_IMAGE` | optional | Local image tag used by Docker Compose. |
 | `ADM_FLEXNET_PLATFORM` | optional | Build and runtime platform. Defaults to `linux/amd64`, matching Autodesk's Linux NLM archive. |
-| `ADM_FLEXNET_COMMAND` | optional | Runtime arguments appended to the image entrypoint. |
+| `ADM_FLEXNET_COMMAND` | optional | Extra runtime arguments, if the optional `command` line in `docker-compose.yml` is enabled. |
 
 Treat license files and `.env` as sensitive operational material.
 
-`ADM_FLEXNET_COMMAND` is passed as the container command. Docker appends it to
-the image entrypoint `lmgrd -z -c /opt/flexnetserver/adsk_server.lic`, so the
-default runtime invocation is:
+By default, Compose does not pass a command. Docker runs the image entrypoint
+directly, so FlexNet output stays in the Docker log stream:
 
 ```text
-lmgrd -z -c /opt/flexnetserver/adsk_server.lic -l /logs/lmgrd.log
+lmgrd -z -c /usr/local/flexlm/licenses/license.dat
 ```
+
+To append `lmgrd` runtime arguments, uncomment the optional `command` line in
+`docker-compose.yml` and set `ADM_FLEXNET_COMMAND` in `.env`. Avoid `-l` unless
+you intentionally want FlexNet to write to a file instead of Docker logs.
 
 ## Build Targets
 
@@ -130,16 +133,10 @@ Read Docker logs:
 docker compose logs -f admflexnet
 ```
 
-Read the persistent debug log:
-
-```bash
-tail -f logs/lmgrd.log
-```
-
 Validate the license service from inside the container:
 
 ```bash
-docker compose exec admflexnet lmutil lmstat -a -c /opt/flexnetserver/adsk_server.lic
+docker compose exec admflexnet lmutil lmstat -a -c /usr/local/flexlm/licenses/license.dat
 ```
 
 Apply an updated license file:
@@ -155,7 +152,7 @@ docker compose restart admflexnet
 - Run with a dedicated license-server hostname and MAC address.
 - Mount the Autodesk license file read-only.
 - Restrict ports `2080/tcp` and `27000-27009/tcp` to trusted client networks.
-- Keep `.env`, license files and logs out of Git.
+- Keep `.env`, license files and operational logs out of Git.
 - Pin an internally built image tag or digest in production instead of relying
   on `latest`.
 - Review Autodesk redistribution terms before publishing images.
@@ -187,7 +184,7 @@ The default workflow is configured accordingly:
 | Symptom | Checks |
 | --- | --- |
 | Container exits immediately | Inspect `docker compose logs admflexnet` and verify the license file mount. |
-| Health check fails | Run `lmutil lmstat` manually and inspect `logs/lmgrd.log`. |
+| Health check fails | Run `lmutil lmstat` manually and inspect `docker compose logs admflexnet`. |
 | Clients cannot obtain licenses | Verify hostname, MAC address, firewall rules and license-file `SERVER` / `VENDOR` lines. |
 | Port conflict | Change the host-side published ports or stop the conflicting service. |
 | Build download fails | Validate `ADM_FLEXNET_NLM_URL`; Autodesk download URLs can change. |
