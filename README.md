@@ -102,6 +102,7 @@ Build the default image:
 
 ```bash
 docker build \
+  --platform linux/amd64 \
   --build-arg NLM_URL="$(sed -n 's/^ADM_FLEXNET_NLM_URL=//p' example.env)" \
   --build-arg TARGET_TYPE=gcr.io/distroless/base-debian12:nonroot \
   -t adlmflexnetserver:local .
@@ -111,6 +112,7 @@ For local debugging with more runtime tooling, override the final target:
 
 ```bash
 docker build \
+  --platform linux/amd64 \
   --build-arg NLM_URL="$(sed -n 's/^ADM_FLEXNET_NLM_URL=//p' example.env)" \
   --build-arg TARGET_TYPE=debian:bookworm-slim \
   -t adlmflexnetserver:debug .
