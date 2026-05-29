@@ -1,45 +1,59 @@
-# ============================================
-# STAGE 1: BUILDER — Always Debian (RPM Extraction)
-# ============================================
-FROM debian:bookworm-slim AS builder
+ARG TARGET_TYPE=gcr.io/distroless/base-debian12:nonroot
+ARG ADM_FLEXNET_PLATFORM=linux/amd64
 
-LABEL version="1.0" maintainer="symrex"
+FROM --platform=${ADM_FLEXNET_PLATFORM} debian:bookworm-slim AS builder
 
 ARG NLM_URL
-ARG TEMP_PATH=/opt/flexnetserver
+ARG TEMP_PATH=/tmp/flexnetserver
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# hadolint ignore=DL3008
 RUN set -e && apt-get update && apt-get install -y --no-install-recommends \
-        wget rpm bsdtar lsb-release \
+        ca-certificates cpio rpm2cpio tar wget \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR $TEMP_PATH
-RUN wget --progress=bar:force -- $NLM_URL
-RUN tar -zxvf ./*.tar.gz
+
+# hadolint ignore=DL3003
+RUN set -e; \
+    wget --progress=bar:force --output-document=nlm.tar.gz -- "$NLM_URL"; \
+    tar -xzf nlm.tar.gz; \
+    mkdir -p /staging; \
+    rpm2cpio ./*.rpm | (cd /staging && cpio -idmv); \
+    mkdir -p /staging/etc /staging/logs /staging/var/flexlm; \
+    mkdir -p /staging/lib/x86_64-linux-gnu; \
+    cp /lib/x86_64-linux-gnu/libgcc_s.so.1 /staging/lib/x86_64-linux-gnu/; \
+    printf 'lmadmin:x:10001:10001:Autodesk License Manager:/opt/flexnetserver:/sbin/nologin\n' > /staging/etc/passwd; \
+    printf 'lmadmin:x:10001:\n' > /staging/etc/group; \
+    chown -R 10001:10001 /staging/logs /staging/var/flexlm; \
+    test -x /staging/opt/flexnetserver/lmgrd; \
+    test -x /staging/opt/flexnetserver/lmutil
 
 # ============================================
 # STAGE 2: TARGET — Selectable via BUILD_ARG
 # ============================================
-ARG TARGET_TYPE=debian
-FROM ${TARGET_TYPE} AS final
+FROM --platform=${ADM_FLEXNET_PLATFORM} ${TARGET_TYPE} AS final
 
-# ============================================
-# STAGE 3: RESULT — Copies to final
-# ============================================
 FROM final AS result
 
-COPY --from=builder /opt/flexnetserver /opt/flexnetserver
+ARG BUILD_DATE
+ARG VCS_REF
 
-# Add glibc for Distroless (only if not present)
-RUN if [ ! -f /lib64/ld-linux-x86-64.so.2 ]; then \
-        mkdir -p /lib64 && \
-        cp /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /lib64/ 2>/dev/null || true; \
-    fi
+LABEL org.opencontainers.image.title="docker-adlmflexnetserver" \
+      org.opencontainers.image.description="Build recipe for Autodesk Network License Manager / FlexNet in a container" \
+      org.opencontainers.image.source="https://github.com/symrex/docker-adlmflexnetserver" \
+      org.opencontainers.image.url="https://github.com/symrex/docker-adlmflexnetserver" \
+      org.opencontainers.image.documentation="https://github.com/symrex/docker-adlmflexnetserver#readme" \
+      org.opencontainers.image.authors="symrex" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.licenses="MIT AND LicenseRef-Autodesk-NLM"
 
-VOLUME ["/opt/flexnetserver"]
+COPY --from=builder /staging/ /
+
 EXPOSE 2080
 EXPOSE 27000-27009
 
-USER lmadmin
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD lmutil lmstat -a -c /opt/flexnetserver/adsk_server.lic || exit 1
-ENTRYPOINT ["lmgrd", "-z", "-c", "/opt/flexnetserver/adsk_server.lic", "@"]
+USER lmadmin:lmadmin
+ENTRYPOINT ["/opt/flexnetserver/lmgrd", "-z", "-c", "/opt/flexnetserver/adsk_server.lic"]

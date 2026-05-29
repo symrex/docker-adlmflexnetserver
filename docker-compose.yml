@@ -1,14 +1,18 @@
 services:
   admflexnet:
-    image: ghcr.io/symrex/docker-adlmflexnetserver:latest
+    image: ${ADM_FLEXNET_IMAGE:-adlmflexnetserver:local}
+    platform: ${ADM_FLEXNET_PLATFORM:-linux/amd64}
     build:
       context: .
       dockerfile: Dockerfile
       args:
         NLM_URL: ${ADM_FLEXNET_NLM_URL}
+        ADM_FLEXNET_PLATFORM: ${ADM_FLEXNET_PLATFORM:-linux/amd64}
     hostname: ${ADM_FLEXNET_HOSTNAME}
     mac_address: ${ADM_FLEXNET_MAC_ADDRESS}
+    init: true
     restart: unless-stopped
+    command: ${ADM_FLEXNET_COMMAND}
     ports:
       - "2080:2080"
       - "27000-27009:27000-27009"
@@ -17,6 +21,9 @@ services:
       - ./logs/:/logs/
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    env_file:
-      - example.env
-      - .env
+    healthcheck:
+      test: ["CMD", "/opt/flexnetserver/lmutil", "lmstat", "-a", "-c", "/opt/flexnetserver/adsk_server.lic"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
