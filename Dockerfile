@@ -20,12 +20,13 @@ RUN set -e; \
     tar -xzf nlm.tar.gz; \
     mkdir -p /staging; \
     rpm2cpio ./*.rpm | (cd /staging && cpio -idmv); \
-    mkdir -p /staging/etc /staging/logs /staging/var/flexlm; \
-    mkdir -p /staging/lib/x86_64-linux-gnu; \
-    cp /lib/x86_64-linux-gnu/libgcc_s.so.1 /staging/lib/x86_64-linux-gnu/; \
+    mkdir -p /staging/etc /staging/logs /staging/var/flexlm /staging/usr/tmp/.flexlm; \
+    mkdir -p /staging/usr/lib/x86_64-linux-gnu; \
+    cp /lib/x86_64-linux-gnu/libgcc_s.so.1 /staging/usr/lib/x86_64-linux-gnu/; \
     printf 'lmadmin:x:10001:10001:Autodesk License Manager:/opt/flexnetserver:/sbin/nologin\n' > /staging/etc/passwd; \
     printf 'lmadmin:x:10001:\n' > /staging/etc/group; \
-    chown -R 10001:10001 /staging/logs /staging/var/flexlm; \
+    chmod 1777 /staging/usr/tmp; \
+    chown -R 10001:10001 /staging/logs /staging/var/flexlm /staging/usr/tmp/.flexlm; \
     test -x /staging/opt/flexnetserver/lmgrd; \
     test -x /staging/opt/flexnetserver/lmutil
 
