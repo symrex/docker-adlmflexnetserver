@@ -1,7 +1,6 @@
 ARG TARGET_TYPE=gcr.io/distroless/base-debian12:nonroot
-ARG ADM_FLEXNET_PLATFORM=linux/amd64
 
-FROM --platform=${ADM_FLEXNET_PLATFORM} debian:bookworm-slim AS builder
+FROM debian:bookworm-slim AS builder
 
 ARG NLM_URL
 ARG TEMP_PATH=/tmp/flexnetserver
@@ -33,7 +32,7 @@ RUN set -e; \
 # ============================================
 # STAGE 2: TARGET — Selectable via BUILD_ARG
 # ============================================
-FROM --platform=${ADM_FLEXNET_PLATFORM} ${TARGET_TYPE} AS final
+FROM ${TARGET_TYPE} AS final
 
 FROM final AS result
 
