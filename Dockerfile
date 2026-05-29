@@ -32,6 +32,7 @@ RUN set -e; \
 # ============================================
 # STAGE 2: TARGET — Selectable via BUILD_ARG
 # ============================================
+# hadolint ignore=DL3006
 FROM ${TARGET_TYPE} AS final
 
 FROM final AS result
