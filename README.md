@@ -135,6 +135,7 @@ For a distroless final image:
 ```bash
 docker build \
   --platform linux/amd64 \
+  --build-context build-context=./packages \
   --build-arg FLEXNET_PACKAGE_URL="$(sed -n 's/^FLEXNET_PACKAGE_URL=//p' .env)" \
   --build-arg TARGET_TYPE=gcr.io/distroless/base-debian12:nonroot \
   -t flexnetserver:distroless .
