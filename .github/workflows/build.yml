@@ -70,9 +70,9 @@ jobs:
           context: .
           # Named context required by the Dockerfile for local package
           # references (packages/<file>); empty for URL-based builds.
-          additional_contexts: build-context=./packages
+          build-contexts: build-context=./packages
           # Vendor FlexNet binaries are x86_64 only.
-          platform: linux/amd64
+          platforms: linux/amd64
           load: true
           tags: ${{ env.LOCAL_IMAGE }}
           build-args: |
