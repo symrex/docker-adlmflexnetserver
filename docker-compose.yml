@@ -16,6 +16,7 @@ services:
     command: ${FLEXNET_COMMAND}
     ports:
       - "${FLEXNET_PORT:-2100}:2100"
+      - "${FLEXNET_VENDOR_PORT:-27010}:27010"
     volumes:
       - ./licenses/latest.lic:/usr/local/flexlm/licenses/license.dat:ro
       - /etc/localtime:/etc/localtime:ro

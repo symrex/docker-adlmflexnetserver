@@ -107,6 +107,7 @@ The Compose file reads runtime values from `.env`.
 | `FLEXNET_HOSTNAME` | yes | Hostname used by the vendor license file. |
 | `FLEXNET_MAC_ADDRESS` | yes | MAC address / host ID registered for the license server. |
 | `FLEXNET_PORT` | optional | Host-side port published for `lmgrd`. Defaults to `2100`. |
+| `FLEXNET_VENDOR_PORT` | optional | Host-side port published for the vendor daemon (must match `VENDOR <name> PORT=` in the license file). Defaults to `27010`. |
 | `FLEXNET_IMAGE` | optional | Local image tag used by Docker Compose. |
 | `FLEXNET_PLATFORM` | optional | Build and runtime platform. Defaults to `linux/amd64`, matching the vendor Linux packages. |
 | `FLEXNET_COMMAND` | optional | Extra runtime arguments for `lmgrd`. |
