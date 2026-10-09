@@ -1,27 +1,33 @@
 services:
-  admflexnet:
-    image: ${ADM_FLEXNET_IMAGE:-adlmflexnetserver:local}
-    platform: ${ADM_FLEXNET_PLATFORM:-linux/amd64}
+  flexnet:
+    image: ${FLEXNET_IMAGE:-flexnetserver:local}
+    platform: ${FLEXNET_PLATFORM:-linux/amd64}
     build:
       context: .
       dockerfile: Dockerfile
+      additional_contexts:
+        build-context: ./packages
       args:
-        NLM_URL: ${ADM_FLEXNET_NLM_URL}
-    hostname: ${ADM_FLEXNET_HOSTNAME}
-    mac_address: ${ADM_FLEXNET_MAC_ADDRESS}
+        FLEXNET_PACKAGE_URL: ${FLEXNET_PACKAGE_URL}
+    hostname: ${FLEXNET_HOSTNAME}
+    mac_address: ${FLEXNET_MAC_ADDRESS}
     init: true
     restart: unless-stopped
-    command: ${ADM_FLEXNET_COMMAND}
+    command: ${FLEXNET_COMMAND}
     ports:
-      - "2080:2080"
-      - "27000-27009:27000-27009"
+      - "${FLEXNET_PORT:-2100}:2100"
     volumes:
       - ./licenses/latest.lic:/usr/local/flexlm/licenses/license.dat:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     healthcheck:
-      test: ["CMD", "lmutil", "lmstat", "-a", "-c", "/usr/local/flexlm/licenses/license.dat"]
+      test:
+        - CMD
+        - /usr/local/bin/lmutil
+        - lmstat
+        - -c
+        - /usr/local/flexlm/licenses/license.dat
       interval: 30s
       timeout: 10s
-      start_period: 5s
+      start_period: 15s
       retries: 3

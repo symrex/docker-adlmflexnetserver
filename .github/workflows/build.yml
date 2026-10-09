@@ -24,8 +24,8 @@ permissions:
   contents: read
 
 env:
-  LOCAL_IMAGE: adlmflexnetserver:ci
-  TARGET_TYPE: gcr.io/distroless/base-debian12:nonroot
+  LOCAL_IMAGE: flexnetserver:ci
+  TARGET_TYPE: debian:bookworm-slim
 
 jobs:
   build:
@@ -44,16 +44,16 @@ jobs:
           dockerfile: Dockerfile
           failure-criteria: warning
 
-      - name: Resolve NLM URL
-        id: nlm_url
+      - name: Resolve package URL
+        id: package_url
         run: |
           set -euo pipefail
-          NLM_URL="$(grep '^ADM_FLEXNET_NLM_URL=' example.env 2>/dev/null | head -1 | cut -d'=' -f2- || true)"
-          if [ -z "$NLM_URL" ]; then
-            echo "ADM_FLEXNET_NLM_URL is required in example.env" >&2
+          PACKAGE_URL="$(grep '^FLEXNET_PACKAGE_URL=' example.env 2>/dev/null | head -1 | cut -d'=' -f2- || true)"
+          if [ -z "$PACKAGE_URL" ]; then
+            echo "FLEXNET_PACKAGE_URL is required in example.env" >&2
             exit 1
           fi
-          printf 'NLM_URL<<EOF\n%s\nEOF\n' "$NLM_URL" >> "$GITHUB_OUTPUT"
+          printf 'PACKAGE_URL<<EOF\n%s\nEOF\n' "$PACKAGE_URL" >> "$GITHUB_OUTPUT"
 
       - name: Set build metadata
         id: metadata
@@ -71,7 +71,7 @@ jobs:
           load: true
           tags: ${{ env.LOCAL_IMAGE }}
           build-args: |
-            NLM_URL=${{ steps.nlm_url.outputs.NLM_URL }}
+            FLEXNET_PACKAGE_URL=${{ steps.package_url.outputs.PACKAGE_URL }}
             TARGET_TYPE=${{ env.TARGET_TYPE }}
             BUILD_DATE=${{ steps.metadata.outputs.BUILD_DATE }}
             VCS_REF=${{ github.sha }}
@@ -84,7 +84,7 @@ jobs:
           set -euo pipefail
           docker run --rm \
             --platform linux/amd64 \
-            --entrypoint /opt/flexnetserver/lmutil \
+            --entrypoint /usr/local/bin/lmutil \
             "${LOCAL_IMAGE}" lmhostid
 
       - name: Add build summary

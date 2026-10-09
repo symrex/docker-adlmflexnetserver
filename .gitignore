@@ -1,3 +1,5 @@
 .env
 licenses/*
 !licenses/.gitkeep
+packages/*
+!packages/.gitkeep
