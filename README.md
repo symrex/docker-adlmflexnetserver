@@ -199,6 +199,7 @@ The default workflow is configured accordingly:
 | --- | --- |
 | Container exits immediately | Inspect `docker compose logs flexnet` and verify the license file mount. |
 | `xilinxd`/`adskflex` exited with status 45 | The vendor daemon binary is missing from the image — verify `FLEXNET_PACKAGE_URL` points to the complete vendor package (not only `lmgrd`). |
+| `Unrecognized command-line switch "d"` | The vendor `lmgrd` does not support `-datestamp` (Xilinx FlexLM does not). Use `FLEXNET_COMMAND=-z` for Xilinx; `-z -datestamp` works for Autodesk. |
 | `Not a valid server hostname` | The container hostname must match the `SERVER` line of the license file (`FLEXNET_HOSTNAME`). |
 | `No valid hostids, exiting` | The container MAC address must match the host ID in the license file (`FLEXNET_MAC_ADDRESS`). |
 | Health check fails | Run `lmutil lmstat` manually and inspect `docker compose logs flexnet`. |
